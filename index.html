@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0a0f" />
+  <meta name="description" content="Descubre y apúntate a eventos locales cerca de ti" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="EventoNear" />
+  <title>EventoNear</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ionic/core/css/ionic.bundle.css" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap');
+
+    :root {
+      --accent: #e8ff47;
+      --accent2: #ff5c5c;
+      --bg: #0a0a0f;
+      --bg2: #13131a;
+      --bg3: #1c1c27;
+      --text: #f0f0f0;
+      --text-muted: #7a7a8c;
+      --border: rgba(255,255,255,0.08);
+      --radius: 16px;
+      --font-display: 'Bebas Neue', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; overflow: hidden !important; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      max-width: 430px;
+      margin: 0 auto;
+      height: 100%;
+    }
+
+    /* ── Páginas ── */
+    .page { display: none; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 80px; }
+    .page.active { display: block; animation: fadeIn 0.25s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    /* ── Header ── */
+    .app-header {
+      padding: 52px 20px 20px;
+      background: var(--bg);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid var(--border);
+    }
+    .header-row { display: flex; align-items: center; justify-content: space-between; }
+    .logo { font-family: var(--font-display); font-size: 32px; letter-spacing: 1px; color: var(--accent); line-height: 1; }
+    .logo span { color: var(--text); }
+    .location-pill {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 20px; padding: 6px 12px;
+      font-size: 12px; color: var(--text-muted); cursor: pointer;
+    }
+    .location-pill svg { width:12px; height:12px; fill: var(--accent); }
+
+    /* ── Búsqueda ── */
+    .search-bar {
+      margin-top: 14px;
+      display: flex; align-items: center; gap: 10px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 12px; padding: 10px 14px;
+    }
+    .search-bar svg { width:16px; height:16px; fill: var(--text-muted); flex-shrink: 0; }
+    .search-bar input {
+      background: none; border: none; outline: none;
+      color: var(--text); font-family: var(--font-body);
+      font-size: 14px; width: 100%;
+    }
+    .search-bar input::placeholder { color: var(--text-muted); }
+
+    /* ── Chips categoría (fix: sin overflow:hidden en ancestro, touch scroll) ── */
+    .chips-scroll {
+      display: flex; gap: 8px;
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      padding: 16px 20px 4px;
+      scrollbar-width: none;
+    }
+    .chips-scroll::-webkit-scrollbar { display: none; }
+    .chip {
+      flex-shrink: 0; padding: 7px 16px; border-radius: 20px;
+      border: 1px solid var(--border); background: var(--bg2);
+      font-size: 13px; color: var(--text-muted); cursor: pointer;
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .chip.active, .chip:hover { background: var(--accent); color: #0a0a0f; border-color: var(--accent); font-weight: 500; }
+
+    /* ── Sección ── */
+    .section { padding: 20px 20px 0; }
+    .section-title { font-family: var(--font-display); font-size: 22px; letter-spacing: 0.5px; margin-bottom: 14px; }
+    .section-title span { color: var(--accent); }
+
+    /* ── Card evento destacado ── */
+    .featured-card {
+      border-radius: var(--radius); overflow: hidden;
+      background: var(--bg3); border: 1px solid var(--border);
+      cursor: pointer; transition: transform 0.2s;
+      position: relative;
+    }
+    .featured-card:hover { transform: translateY(-2px); }
+    .featured-img {
+      width: 100%; height: 180px;
+      background: linear-gradient(135deg, #1a1a30 0%, #2a1a3a 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 64px;
+    }
+    .featured-cat-badge {
+      position: absolute; top: 12px; left: 12px;
+      background: var(--accent); color: #0a0a0f;
+      font-size: 10px; font-weight: 500; padding: 3px 10px;
+      border-radius: 20px; letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .featured-body { padding: 14px; }
+    .featured-body h3 { font-family: var(--font-display); font-size: 20px; letter-spacing: 0.3px; margin-bottom: 6px; }
+    .event-meta { display: flex; gap: 14px; flex-wrap: wrap; }
+    .event-meta span { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+    .event-meta svg { width:12px; height:12px; fill: var(--text-muted); }
+
+    /* ── Lista de eventos ── */
+    .event-list { display: flex; flex-direction: column; gap: 10px; }
+    .event-row {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .event-row:hover { background: var(--bg2); }
+    .event-date-box {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 8px 10px; text-align: center;
+      min-width: 48px; flex-shrink: 0;
+    }
+    .event-date-box .day { font-family: var(--font-display); font-size: 22px; color: var(--accent); line-height: 1; }
+    .event-date-box .month { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
+    .event-row-info { flex: 1; min-width: 0; }
+    .event-row-info h4 { font-size: 14px; font-weight: 500; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .event-row-info p { font-size: 12px; color: var(--text-muted); }
+    .event-row-price { font-family: var(--font-display); font-size: 16px; color: var(--accent); flex-shrink: 0; }
+    .event-row-price.free { color: #4ade80; }
+
+    /* ── Página detalle ── */
+    .detail-hero {
+      width: 100%; height: 240px;
+      background: linear-gradient(135deg, #1a1a30 0%, #2a1a3a 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 80px; position: relative;
+    }
+    .detail-back {
+      position: absolute; top: 52px; left: 16px;
+      background: rgba(0,0,0,0.5); border: 1px solid var(--border);
+      border-radius: 50%; width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; backdrop-filter: blur(6px);
+    }
+    .detail-back svg { width:18px; height:18px; fill: var(--text); }
+    .detail-body { padding: 20px; }
+    .detail-cat { font-size: 11px; color: var(--accent); font-weight: 500; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .detail-title { font-family: var(--font-display); font-size: 34px; letter-spacing: 0.5px; line-height: 1.1; margin-bottom: 16px; }
+    .detail-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .meta-item { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+    .meta-item .meta-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .meta-item .meta-val { font-size: 14px; font-weight: 500; }
+    .detail-desc { font-size: 14px; color: var(--text-muted); line-height: 1.7; margin-bottom: 24px; }
+
+    /* ── Asistentes ── */
+    .attendees-section { margin-bottom: 16px; }
+    .attendees-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+    .attendees-row { display: flex; align-items: center; gap: 12px; }
+    .avatars-group { display: flex; }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--bg3); border: 2px solid var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 600; color: var(--accent);
+      margin-left: -8px; flex-shrink: 0;
+    }
+    .avatars-group .avatar:first-child { margin-left: 0; }
+    .attendees-more { font-size: 13px; color: var(--text-muted); }
+
+    /* ── Badge aforo ── */
+    .capacity-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 20px;
+      font-size: 13px; font-weight: 500; margin-bottom: 20px;
+    }
+    .capacity-badge.cap-green { background: rgba(74,222,128,0.12); color: #4ade80; border: 1px solid rgba(74,222,128,0.25); }
+    .capacity-badge.cap-yellow { background: rgba(250,204,21,0.12); color: #facc15; border: 1px solid rgba(250,204,21,0.25); }
+    .capacity-badge.cap-red { background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.25); }
+
+    /* ── Botones detalle ── */
+    .btn-share {
+      width: 100%; padding: 14px; margin-bottom: 12px;
+      background: transparent; color: var(--text);
+      border: 1px solid var(--border); border-radius: 14px;
+      font-family: var(--font-display); font-size: 18px; letter-spacing: 1px;
+      cursor: pointer; transition: background 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-share:hover { background: var(--bg3); }
+    .btn-share svg { width:16px; height:16px; fill: currentColor; flex-shrink: 0; }
+    .btn-inscribir {
+      width: 100%; padding: 16px;
+      background: var(--accent); color: #0a0a0f;
+      border: none; border-radius: 14px;
+      font-family: var(--font-display); font-size: 20px; letter-spacing: 1px;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn-inscribir:hover { opacity: 0.9; }
+
+    /* ── Formulario inscripción ── */
+    .form-page { padding: 52px 20px 100px; }
+    .form-back-row { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; cursor: pointer; }
+    .form-back-row svg { width:20px; height:20px; fill: var(--text-muted); }
+    .form-back-row span { font-size: 14px; color: var(--text-muted); }
+    .form-title { font-family: var(--font-display); font-size: 30px; margin-bottom: 4px; }
+    .form-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: block; }
+    .form-input, .form-select {
+      width: 100%; padding: 13px 16px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text);
+      font-family: var(--font-body); font-size: 15px;
+      outline: none; transition: border-color 0.15s;
+      appearance: none; color-scheme: dark;
+    }
+    .form-input:focus, .form-select:focus { border-color: var(--accent); }
+    .form-input.error, .form-select.error, .form-textarea.error { border-color: var(--accent2) !important; }
+    .form-select option { background: var(--bg3); }
+    .form-textarea {
+      width: 100%; padding: 13px 16px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text);
+      font-family: var(--font-body); font-size: 15px;
+      outline: none; transition: border-color 0.15s;
+      resize: vertical; min-height: 90px; color-scheme: dark;
+    }
+    .form-textarea:focus { border-color: var(--accent); }
+    .form-error { font-size: 11px; color: var(--accent2); margin-top: 5px; display: none; }
+    .form-error.visible { display: block; }
+    .char-counter { font-size: 11px; color: var(--text-muted); text-align: right; margin-top: 4px; }
+    .radio-group { display: flex; gap: 10px; flex-wrap: wrap; }
+    .radio-btn {
+      flex: 1; min-width: 90px; padding: 10px;
+      border: 1px solid var(--border); border-radius: 10px;
+      text-align: center; cursor: pointer; font-size: 13px; color: var(--text-muted);
+      transition: all 0.15s; background: var(--bg3);
+    }
+    .radio-btn.selected { border-color: var(--accent); color: var(--accent); background: rgba(232,255,71,0.08); }
+    .btn-submit {
+      width: 100%; margin-top: 24px; padding: 16px;
+      background: var(--accent); color: #0a0a0f;
+      border: none; border-radius: 14px;
+      font-family: var(--font-display); font-size: 22px; letter-spacing: 1px;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn-submit:hover { opacity: 0.9; }
+
+    /* ── Confirmación ── */
+    .confirm-page {
+      display: none; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 100vh; padding: 40px 20px; text-align: center;
+    }
+    .confirm-page.active { display: flex; animation: fadeIn 0.3s ease; }
+    .confirm-icon { font-size: 72px; margin-bottom: 24px; }
+    .confirm-title { font-family: var(--font-display); font-size: 40px; color: var(--accent); margin-bottom: 10px; }
+    .confirm-sub { font-size: 15px; color: var(--text-muted); line-height: 1.6; max-width: 280px; margin: 0 auto 32px; }
+    .confirm-card {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; width: 100%; margin-bottom: 28px; text-align: left;
+    }
+    .confirm-card h4 { font-family: var(--font-display); font-size: 20px; margin-bottom: 8px; }
+    .confirm-card p { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
+    .confirm-card p span { color: var(--text); }
+    .btn-volver {
+      width: 100%; padding: 16px;
+      background: transparent; color: var(--text);
+      border: 1px solid var(--border); border-radius: 14px;
+      font-family: var(--font-display); font-size: 20px; letter-spacing: 1px;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-volver:hover { background: var(--bg3); }
+
+    /* ── Mis eventos ── */
+    .mis-eventos-empty {
+      min-height: calc(100vh - 180px); display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px; color: var(--text-muted); text-align: center; padding: 40px;
+    }
+    .mis-eventos-empty .empty-icon { font-size: 48px; opacity: 0.4; }
+    .mis-eventos-empty p { font-size: 14px; max-width: 220px; line-height: 1.6; }
+
+    /* ── Bottom nav ── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 430px;
+      background: var(--bg2); border-top: 1px solid var(--border);
+      display: flex; padding: 10px 0 20px; z-index: 100;
+    }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+      cursor: pointer; color: var(--text-muted); font-size: 10px; transition: color 0.15s;
+    }
+    .nav-item.active { color: var(--accent); }
+    .nav-item svg { width: 22px; height: 22px; fill: currentColor; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--bg3); border: 1px solid var(--accent);
+      color: var(--text); font-size: 13px; padding: 10px 20px;
+      border-radius: 20px; opacity: 0; transition: all 0.3s; z-index: 200; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════ PÁGINA: INICIO ══════════════ -->
+<div class="page active" id="page-home">
+  <div class="app-header">
+    <div class="header-row">
+      <div class="logo">Evento<span>Near</span></div>
+      <div class="location-pill" onclick="showToast('Usando ubicación: Madrid')">
+        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+        Madrid
+      </div>
+    </div>
+    <div class="search-bar">
+      <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      <input type="text" placeholder="Buscar eventos, artistas, lugares..." id="search-input" oninput="filterEvents(this.value)" />
+    </div>
+  </div>
+
+  <div class="chips-scroll">
+    <div class="chip active" onclick="filterCat(this,'todos')">Todos</div>
+    <div class="chip" onclick="filterCat(this,'musica')">Música</div>
+    <div class="chip" onclick="filterCat(this,'deporte')">Deporte</div>
+    <div class="chip" onclick="filterCat(this,'teatro')">Teatro</div>
+    <div class="chip" onclick="filterCat(this,'gastronomia')">Gastronomía</div>
+    <div class="chip" onclick="filterCat(this,'arte')">Arte</div>
+    <div class="chip" onclick="filterCat(this,'cine')">Cine</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Destacado <span>hoy</span></div>
+    <div class="featured-card" onclick="openDetail(0)">
+      <div class="featured-img"></div>
+      <span class="featured-cat-badge">Música</span>
+      <div class="featured-body">
+        <h3>Festival Rock en el Parque</h3>
+        <div class="event-meta">
+          <span>
+            <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+            10 Mayo · 18:00
+          </span>
+          <span>
+            <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            Parque del Retiro
+          </span>
+          <span>
+            <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            +340 asistentes
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" style="margin-top:20px;">
+    <div class="section-title">Próximos <span>eventos</span></div>
+    <div class="event-list" id="event-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════ PÁGINA: DETALLE ══════════════ -->
+<div class="page" id="page-detail">
+  <div class="detail-hero" id="detail-hero">
+    <div class="detail-back" onclick="showPage('home')">
+      <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    </div>
+  </div>
+  <div class="detail-body">
+    <div class="detail-cat" id="detail-cat"></div>
+    <div class="detail-title" id="detail-title"></div>
+    <div class="detail-meta-grid">
+      <div class="meta-item">
+        <div class="meta-label">Fecha</div>
+        <div class="meta-val" id="detail-fecha"></div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Hora</div>
+        <div class="meta-val" id="detail-hora"></div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Lugar</div>
+        <div class="meta-val" id="detail-lugar"></div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Precio</div>
+        <div class="meta-val" id="detail-precio"></div>
+      </div>
+    </div>
+    <div class="detail-desc" id="detail-desc"></div>
+
+    <div class="attendees-section">
+      <div class="attendees-label">Asistentes confirmados</div>
+      <div class="attendees-row">
+        <div class="avatars-group" id="detail-avatars"></div>
+        <span class="attendees-more" id="detail-mas"></span>
+      </div>
+    </div>
+
+    <div id="detail-plazas"></div>
+
+    <button class="btn-share" onclick="shareEvent()">
+      <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+      COMPARTIR EVENTO
+    </button>
+    <button class="btn-inscribir" onclick="goToForm()">INSCRIBIRME AHORA</button>
+  </div>
+</div>
+
+<!-- ══════════════ PÁGINA: FORMULARIO ══════════════ -->
+<div class="page" id="page-form">
+  <div class="form-page">
+    <div class="form-back-row" onclick="showPage('detail')">
+      <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      <span>Volver al evento</span>
+    </div>
+    <div class="form-title">Inscripción</div>
+    <div class="form-subtitle" id="form-subtitle">Completa tus datos para reservar tu plaza</div>
+
+    <div class="form-group">
+      <label class="form-label">Nombre *</label>
+      <input class="form-input" type="text" id="f-nombre" placeholder="Tu nombre" />
+      <div class="form-error" id="err-nombre">Este campo es obligatorio</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Apellidos *</label>
+      <input class="form-input" type="text" id="f-apellidos" placeholder="Tus apellidos" />
+      <div class="form-error" id="err-apellidos">Este campo es obligatorio</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email *</label>
+      <input class="form-input" type="email" id="f-email" placeholder="tu@email.com" />
+      <div class="form-error" id="err-email">Introduce un email válido</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Teléfono</label>
+      <input class="form-input" type="tel" id="f-telefono" placeholder="+34 600 000 000" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Fecha de nacimiento *</label>
+      <input class="form-input" type="date" id="f-fechanac" />
+      <div class="form-error" id="err-fechanac">Este campo es obligatorio</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Ciudad de procedencia *</label>
+      <input class="form-input" type="text" id="f-ciudad" placeholder="Tu ciudad" />
+      <div class="form-error" id="err-ciudad">Este campo es obligatorio</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Género</label>
+      <div class="radio-group">
+        <div class="radio-btn selected" onclick="selectRadio(this,'genero')">Hombre</div>
+        <div class="radio-btn" onclick="selectRadio(this,'genero')">Mujer</div>
+        <div class="radio-btn" onclick="selectRadio(this,'genero')">No binario</div>
+        <div class="radio-btn" onclick="selectRadio(this,'genero')">Prefiero no decir</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Entradas</label>
+      <select class="form-select" id="f-entradas">
+        <option>1 entrada</option>
+        <option>2 entradas</option>
+        <option>3 entradas</option>
+        <option>4 entradas</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">¿Cómo nos has conocido? *</label>
+      <select class="form-select" id="f-conocio">
+        <option value="">Selecciona una opción</option>
+        <option value="redes">Redes sociales</option>
+        <option value="amigos">Amigos</option>
+        <option value="google">Google</option>
+        <option value="cartel">Cartel publicitario</option>
+        <option value="otro">Otro</option>
+      </select>
+      <div class="form-error" id="err-conocio">Por favor selecciona una opción</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Comentarios o necesidades especiales</label>
+      <textarea class="form-textarea" id="f-comentarios" placeholder="Alergias, accesibilidad, dudas..." maxlength="200" oninput="updateCharCount(this)"></textarea>
+      <div class="char-counter"><span id="char-count">0</span> / 200</div>
+    </div>
+
+    <button class="btn-submit" onclick="submitForm()">CONFIRMAR INSCRIPCIÓN</button>
+  </div>
+</div>
+
+<!-- ══════════════ PÁGINA: CONFIRMACIÓN ══════════════ -->
+<div class="confirm-page" id="page-confirm">
+  <div class="confirm-title">¡Apuntado!</div>
+  <div class="confirm-sub">Tu plaza está reservada. Te hemos enviado los detalles por email.</div>
+  <div class="confirm-card">
+    <h4 id="confirm-evento"></h4>
+    <p>Nombre: <span id="confirm-nombre"></span></p>
+    <p>Email: <span id="confirm-email"></span></p>
+    <p>Entradas: <span id="confirm-entradas"></span></p>
+  </div>
+  <button class="btn-volver" onclick="goHome()">VOLVER AL INICIO</button>
+</div>
+
+<!-- ══════════════ MIS EVENTOS ══════════════ -->
+<div class="page" id="page-mis">
+  <div class="app-header">
+    <div class="header-row">
+      <div class="logo">Mis <span>Eventos</span></div>
+    </div>
+  </div>
+  <div class="mis-eventos-empty" id="mis-empty">
+    <p>Aún no te has apuntado a ningún evento.<br>¡Explora y reserva tu primera plaza!</p>
+  </div>
+  <div class="section" id="mis-list" style="display:none; margin-top:16px;">
+    <div class="event-list" id="mis-event-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════ BOTTOM NAV ══════════════ -->
+<nav class="bottom-nav" id="bottom-nav">
+  <div class="nav-item active" onclick="switchNav(this,'home')" id="nav-home">
+    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    Inicio
+  </div>
+  <div class="nav-item" onclick="switchNav(this,'mis')" id="nav-mis">
+    <svg viewBox="0 0 24 24"><path d="M20 6h-2.18c.07-.44.18-.88.18-1.34C18 2.55 15.45 1 12.96 1c-1.39 0-2.77.54-3.77 1.54L8 3.77 6.81 2.54C5.81 1.54 4.43 1 3.04 1 1.38 1 0 2.38 0 4.04c0 .46.09.9.16 1.34H0v14c0 1.1.9 2 2 2h20c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM6 4.04c0-.58.47-1.04 1.04-1.04.28 0 .54.11.73.29L10 5.52C9.27 6.15 8.13 6.5 6.5 6.5H6V4.04zM22 20H2V8h20v12z"/></svg>
+    Mis eventos
+  </div>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const EVENTOS = [
+  {
+    id:0, cat:'musica', catLabel:'Música',
+    titulo:'Festival Rock en el Parque',
+    fecha:'10 Mayo', hora:'18:00', lugar:'Parque del Retiro',
+    precio:'Gratis', precioFree:true,
+    desc:'El festival de rock más grande del año llega al Retiro. Cuatro escenarios, más de 20 bandas en directo y ambiente inigualable. Ven con amigos y disfruta de una tarde mágica rodeado de música en vivo.',
+    dia:'10', mes:'MAY', plazas:3, masPersonas:340,
+    asistentes:['AL','MR','JG','CP']
+  },
+  {
+    id:1, cat:'deporte', catLabel:'Deporte',
+    titulo:'Torneo Pádel Urbano Madrid',
+    fecha:'14 Mayo', hora:'10:00', lugar:'Madrid Arena',
+    precio:'15€', precioFree:false,
+    desc:'Apúntate al torneo de pádel más popular de la ciudad. Categorías para todos los niveles, desde principiante hasta avanzado. Premios para los tres primeros clasificados de cada categoría.',
+    dia:'14', mes:'MAY', plazas:8, masPersonas:156,
+    asistentes:['TS','BN','RC','HM']
+  },
+  {
+    id:2, cat:'teatro', catLabel:'Teatro',
+    titulo:'Hamlet — Teatro Español',
+    fecha:'17 Mayo', hora:'20:30', lugar:'Teatro Español',
+    precio:'20€', precioFree:false,
+    desc:'La obra más universal de Shakespeare representada por la compañía más premiada de España. Una producción revolucionaria que mezcla el texto original con escenografía contemporánea. Una noche de teatro irrepetible.',
+    dia:'17', mes:'MAY', plazas:45, masPersonas:89,
+    asistentes:['RP','QA','WE','YU']
+  },
+  {
+    id:3, cat:'gastronomia', catLabel:'Gastronomía',
+    titulo:'Feria Gastronómica de Madrid',
+    fecha:'20 Mayo', hora:'12:00', lugar:'Ifema Madrid',
+    precio:'8€', precioFree:false,
+    desc:'Más de 200 productores locales se reúnen en el mayor evento gastronómico de la capital. Showcookings con chefs de estrella Michelin, catas guiadas de vino y aceite de oliva virgen extra.',
+    dia:'20', mes:'MAY', plazas:120, masPersonas:412,
+    asistentes:['LG','MP','SF','DV']
+  },
+  {
+    id:4, cat:'arte', catLabel:'Arte',
+    titulo:'Noche en Blanco · Arte Urbano',
+    fecha:'24 Mayo', hora:'21:00', lugar:'Centro de Madrid',
+    precio:'Gratis', precioFree:true,
+    desc:'Una noche de instalaciones artísticas, murales en vivo y performances por los barrios históricos de Madrid. Más de 50 artistas nacionales e internacionales participan en esta edición especial.',
+    dia:'24', mes:'MAY', plazas:15, masPersonas:267,
+    asistentes:['NK','PL','AB','CO']
+  },
+  {
+    id:5, cat:'musica', catLabel:'Música',
+    titulo:'Jazz Sessions · Café Central',
+    fecha:'28 Mayo', hora:'22:00', lugar:'Café Central',
+    precio:'25€', precioFree:false,
+    desc:'Las mejores sesiones de jazz en directo en el local más mítico de Madrid. Esta noche actúa el cuarteto de Marcos Jiménez, ganador del Premio Nacional de Jazz 2024. Aforo muy limitado, reserva con antelación.',
+    dia:'28', mes:'MAY', plazas:2, masPersonas:43,
+    asistentes:['FR','JM','PG','IT']
+  },
+  {
+    id:6, cat:'cine', catLabel:'Cine',
+    titulo:'Ciclo Cine Español Contemporáneo',
+    fecha:'3 Junio', hora:'19:30', lugar:'Cineteca Madrid',
+    precio:'5€', precioFree:false,
+    desc:'Una selección de los mejores largometrajes españoles de los últimos cinco años. Presentación a cargo de sus directores y coloquio posterior con el público. Entrada incluye catálogo impreso.',
+    dia:'3', mes:'JUN', plazas:30, masPersonas:78,
+    asistentes:['CL','MB','RS','TG']
+  },
+  {
+    id:7, cat:'deporte', catLabel:'Deporte',
+    titulo:'Media Maratón Madrid 2025',
+    fecha:'7 Junio', hora:'09:00', lugar:'Paseo del Prado',
+    precio:'20€', precioFree:false,
+    desc:'La carrera más esperada del verano madrileño recorre los monumentos más emblemáticos de la ciudad. Categorías populares y élite, con camiseta técnica y medalla de finisher incluidas en la inscripción.',
+    dia:'7', mes:'JUN', plazas:200, masPersonas:892,
+    asistentes:['AM','BK','CJ','DF']
+  },
+  {
+    id:8, cat:'musica', catLabel:'Música',
+    titulo:'Concierto de Piano al Aire Libre',
+    fecha:'11 Junio', hora:'20:00', lugar:'Plaza Mayor',
+    precio:'Gratis', precioFree:true,
+    desc:'La Plaza Mayor se convierte en sala de conciertos bajo las estrellas. La pianista Ana Serrano interpreta un repertorio que va de Chopin a Keith Jarrett. Lleva tu propia silla o disfruta de pie.',
+    dia:'11', mes:'JUN', plazas:60, masPersonas:134,
+    asistentes:['GH','IL','JN','KP']
+  },
+  {
+    id:9, cat:'arte', catLabel:'Arte',
+    titulo:'Exposición Dalí · Reina Sofía',
+    fecha:'15 Junio', hora:'10:00', lugar:'Museo Reina Sofía',
+    precio:'10€', precioFree:false,
+    desc:'Una retrospectiva única de Salvador Dalí con obras jamás exhibidas en España procedentes de colecciones privadas internacionales. Visita guiada y audio descargable incluidos con la entrada.',
+    dia:'15', mes:'JUN', plazas:25, masPersonas:56,
+    asistentes:['LR','MS','NT','OV']
+  },
+  {
+    id:10, cat:'gastronomia', catLabel:'Gastronomía',
+    titulo:'Street Food Festival Madrid',
+    fecha:'19 Junio', hora:'13:00', lugar:'Parque Tierno Galván',
+    precio:'8€', precioFree:false,
+    desc:'Más de 40 food trucks con cocinas de todo el mundo se reúnen en el parque. Desde tacos mexicanos hasta ramen japonés pasando por bravas de autor. Música en directo toda la jornada.',
+    dia:'19', mes:'JUN', plazas:12, masPersonas:203,
+    asistentes:['PW','QX','RY','SZ']
+  },
+  {
+    id:11, cat:'cine', catLabel:'Cine',
+    titulo:'Cine de Verano al Aire Libre',
+    fecha:'25 Junio', hora:'22:30', lugar:'Jardines de Sabatini',
+    precio:'5€', precioFree:false,
+    desc:'Los Jardines de Sabatini acogen la proyección de clásicos del cine bajo el cielo de Madrid. Esta semana: Blade Runner en versión original subtitulada. Trae manta y disfruta de la noche.',
+    dia:'25', mes:'JUN', plazas:18, masPersonas:91,
+    asistentes:['TA','UB','VC','WD']
+  },
+];
+
+let currentFilter = 'todos';
+let currentEventId = 0;
+let misEventos = JSON.parse(localStorage.getItem('mis-eventos') || '[]');
+
+function normalizar(str) {
+  return str.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+
+function renderList(eventos) {
+  const el = document.getElementById('event-list');
+  if (eventos.length === 0) {
+    el.innerHTML = '<p style="color:var(--text-muted);font-size:14px;padding:20px 0;text-align:center;">No se encontraron eventos</p>';
+    return;
+  }
+  el.innerHTML = eventos.map(e => `
+    <div class="event-row" onclick="openDetail(${e.id})">
+      <div class="event-date-box">
+        <div class="day">${e.dia}</div>
+        <div class="month">${e.mes}</div>
+      </div>
+      <div class="event-row-info">
+        <h4>${e.titulo}</h4>
+        <p>${e.lugar} · ${e.hora}</p>
+      </div>
+      <div class="event-row-price ${e.precioFree ? 'free' : ''}">${e.precio}</div>
+    </div>
+  `).join('');
+}
+
+function filterCat(el, cat) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentFilter = cat;
+  applyFilters();
+}
+
+function filterEvents(q) {
+  applyFilters(q);
+}
+
+function applyFilters(q = document.getElementById('search-input').value) {
+  let filtered = EVENTOS;
+  if (currentFilter !== 'todos') {
+    filtered = filtered.filter(e => e.cat === currentFilter);
+  }
+  if (q.trim()) {
+    const norm = normalizar(q);
+    filtered = filtered.filter(e =>
+      normalizar(e.titulo).includes(norm) ||
+      normalizar(e.lugar).includes(norm) ||
+      normalizar(e.catLabel).includes(norm)
+    );
+  }
+  renderList(filtered);
+}
+
+function openDetail(id) {
+  const e = EVENTOS.find(ev => ev.id === id);
+  currentEventId = id;
+  document.getElementById('detail-cat').textContent = e.catLabel;
+  document.getElementById('detail-title').textContent = e.titulo;
+  document.getElementById('detail-fecha').textContent = e.fecha;
+  document.getElementById('detail-hora').textContent = e.hora;
+  document.getElementById('detail-lugar').textContent = e.lugar;
+  document.getElementById('detail-precio').textContent = e.precio;
+  document.getElementById('detail-desc').textContent = e.desc;
+
+  document.getElementById('detail-avatars').innerHTML =
+    e.asistentes.map(ini => `<div class="avatar">${ini}</div>`).join('');
+  document.getElementById('detail-mas').textContent = `y ${e.masPersonas} personas más`;
+
+  const p = e.plazas;
+  const cls = p > 20 ? 'cap-green' : p >= 5 ? 'cap-yellow' : 'cap-red';
+  const dot = p > 20 ? '🟢' : p >= 5 ? '🟡' : '🔴';
+  document.getElementById('detail-plazas').innerHTML =
+    `<span class="capacity-badge ${cls}">${dot} Quedan ${p} plazas</span>`;
+
+  showPage('detail');
+}
+
+function shareEvent() {
+  const fakeUrl = `https://eventonear.app/evento/${currentEventId}`;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(fakeUrl)
+      .then(() => showToast('Enlace copiado al portapapeles'))
+      .catch(() => showToast('Enlace copiado al portapapeles'));
+  } else {
+    showToast('Enlace copiado al portapapeles');
+  }
+}
+
+function goToForm() {
+  const e = EVENTOS.find(ev => ev.id === currentEventId);
+  document.getElementById('form-subtitle').textContent = `Inscripción para: ${e.titulo}`;
+  showPage('form');
+}
+
+function selectRadio(el, group) {
+  el.closest('.radio-group').querySelectorAll('.radio-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function updateCharCount(el) {
+  document.getElementById('char-count').textContent = el.value.length;
+}
+
+function setFieldError(inputId, errId, hasError) {
+  const input = document.getElementById(inputId);
+  const err = document.getElementById(errId);
+  if (hasError) {
+    input.classList.add('error');
+    err.classList.add('visible');
+  } else {
+    input.classList.remove('error');
+    err.classList.remove('visible');
+  }
+  return !hasError;
+}
+
+function submitForm() {
+  const nombre    = document.getElementById('f-nombre').value.trim();
+  const apellidos = document.getElementById('f-apellidos').value.trim();
+  const email     = document.getElementById('f-email').value.trim();
+  const fechanac  = document.getElementById('f-fechanac').value;
+  const ciudad    = document.getElementById('f-ciudad').value.trim();
+  const conocio   = document.getElementById('f-conocio').value;
+  const emailOk   = email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  const valid = [
+    setFieldError('f-nombre',    'err-nombre',    !nombre),
+    setFieldError('f-apellidos', 'err-apellidos', !apellidos),
+    setFieldError('f-email',     'err-email',     !emailOk),
+    setFieldError('f-fechanac',  'err-fechanac',  !fechanac),
+    setFieldError('f-ciudad',    'err-ciudad',    !ciudad),
+    setFieldError('f-conocio',   'err-conocio',   !conocio),
+  ].every(Boolean);
+
+  if (!valid) {
+    const firstErr = document.querySelector('.form-input.error, .form-select.error, .form-textarea.error');
+    if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  const e = EVENTOS.find(ev => ev.id === currentEventId);
+  const entradas = document.getElementById('f-entradas').value;
+  document.getElementById('confirm-evento').textContent = e.titulo;
+  document.getElementById('confirm-nombre').textContent = nombre + ' ' + apellidos;
+  document.getElementById('confirm-email').textContent = email;
+  document.getElementById('confirm-entradas').textContent = entradas;
+
+  if (!misEventos.find(x => x.id === e.id)) {
+    misEventos.push(e);
+    localStorage.setItem('mis-eventos', JSON.stringify(misEventos));
+    renderMisEventos();
+  }
+
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('bottom-nav').style.display = 'none';
+  const cp = document.getElementById('page-confirm');
+  cp.style.display = 'flex';
+  requestAnimationFrame(() => cp.classList.add('active'));
+}
+
+function goHome() {
+  document.getElementById('page-confirm').style.display = 'none';
+  document.getElementById('page-confirm').classList.remove('active');
+  document.getElementById('bottom-nav').style.display = 'flex';
+  ['f-nombre','f-apellidos','f-email','f-telefono','f-fechanac','f-ciudad','f-comentarios'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = ''; el.classList.remove('error'); }
+  });
+  const sel = document.getElementById('f-conocio');
+  sel.value = ''; sel.classList.remove('error');
+  document.querySelectorAll('.form-error').forEach(e => e.classList.remove('visible'));
+  document.getElementById('char-count').textContent = '0';
+  switchNav(document.getElementById('nav-home'), 'home');
+}
+
+function renderMisEventos() {
+  const empty  = document.getElementById('mis-empty');
+  const list   = document.getElementById('mis-list');
+  const listEl = document.getElementById('mis-event-list');
+  if (misEventos.length === 0) {
+    empty.style.display = 'flex'; list.style.display = 'none'; return;
+  }
+  empty.style.display = 'none'; list.style.display = 'block';
+  listEl.innerHTML = misEventos.map(e => `
+    <div class="event-row">
+      <div class="event-date-box">
+        <div class="day">${e.dia}</div>
+        <div class="month">${e.mes}</div>
+      </div>
+      <div class="event-row-info">
+        <h4>${e.titulo}</h4>
+        <p>${e.lugar} · ${e.hora}</p>
+      </div>
+      <div class="event-row-price ${e.precioFree ? 'free' : ''}">${e.precio}</div>
+    </div>
+  `).join('');
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('bottom-nav').style.display = 'flex';
+}
+
+function switchNav(el, page) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+  showPage(page);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+renderList(EVENTOS);
+renderMisEventos();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('SW registrado'))
+      .catch(e => console.warn('SW error:', e));
+  });
+}
+</script>
+</body>
+</html>
